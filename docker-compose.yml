@@ -1,0 +1,122 @@
+version: '2'
+services:
+
+  busybox:
+    extends:
+      file: common-compose.yml
+      service: busybox
+    volumes:
+    - ./src:/var/www
+    depends_on:
+    - nginx
+    - php-fpm
+    - mongo
+    - mysql
+    - memcached
+    - redis
+    - rabbitmq
+    - elasticsearch
+    - graylog
+
+  nginx:
+    extends:
+      file: common-compose.yml
+      service: nginx
+    depends_on:
+    - php-fpm
+    - mysql
+    networks:
+      legacy:
+        aliases:
+          - api.simple.dev
+          - whoisonline.dev
+
+  php-fpm:
+    dns_search:
+    - api.simple.dev
+    - whoisonline.dev
+    extends:
+      file: common-compose.yml
+      service: php-fpm
+    depends_on:
+    - mysql
+    - mongo
+    - memcached
+    - redis
+    - rabbitmq
+    - graylog
+    - elasticsearch
+    networks:
+      - legacy
+
+  nodejs:
+    extends:
+      file: common-compose.yml
+      service: nodejs
+    networks:
+      - legacy
+
+  phpmyadmin:
+    extends:
+      file: common-compose.yml
+      service: phpmyadmin
+    links:
+      - mysql:db
+    depends_on:
+    - mysql
+    networks:
+      - legacy
+
+  mongo:
+    extends:
+      file: common-compose.yml
+      service: mongo
+    networks:
+      - legacy
+
+  mysql:
+    extends:
+      file: common-compose.yml
+      service: mysql
+    networks:
+      - legacy
+
+  memcached:
+    extends:
+      file: common-compose.yml
+      service: memcached
+    networks:
+      - legacy
+
+  redis:
+    extends:
+      file: common-compose.yml
+      service: redis
+
+  rabbitmq:
+    extends:
+      file: common-compose.yml
+      service: rabbitmq
+    networks:
+      - legacy
+
+  elasticsearch:
+    extends:
+      file: common-compose.yml
+      service: elasticsearch
+
+  graylog:
+    extends:
+      file: common-compose.yml
+      service: graylog
+    volumes:
+      - ./dockerfiles/graylog/data/journal:/usr/share/graylog/data/journal
+      - ./dockerfiles/graylog/config:/usr/share/graylog/data/config
+    links:
+      - mongo:mongo
+      - elasticsearch:elasticsearch
+    networks:
+      - legacy
+
+networks:
+  legacy:

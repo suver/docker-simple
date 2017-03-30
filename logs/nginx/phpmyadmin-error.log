@@ -1,0 +1,2 @@
+2016/11/22 10:59:12 [error] 8#8: *46 upstream timed out (110: Connection timed out) while reading response header from upstream, client: 172.27.0.1, server: phpmyadmin.dev, request: "POST /index.php HTTP/1.1", upstream: "http://172.27.0.8:80/index.php", host: "phpmyadmin.dev"
+2016/11/22 22:38:46 [error] 7#7: *8 upstream timed out (110: Connection timed out) while reading response header from upstream, client: 172.27.0.1, server: phpmyadmin.dev, request: "POST /index.php HTTP/1.1", upstream: "http://172.27.0.8:80/index.php", host: "phpmyadmin.dev"

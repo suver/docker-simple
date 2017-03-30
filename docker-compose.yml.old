@@ -1,0 +1,175 @@
+version: '2'
+
+
+services:
+
+  app:
+    image: busybox
+    container_name: simple_app
+    env_file: .env
+    volumes:
+      - ${APP_PATH}:/var/www
+    volumes_from:
+      - busybox
+      - nginx
+      - php
+      - mysql
+      - phpmyadmin
+      - memcache
+      - redis
+    depends_on:
+      - busybox
+      - nginx
+      - php
+      - mysql
+      - phpmyadmin
+      - memcache
+      - redis
+    networks:
+      - db
+      - proxy
+
+  busybox:
+    image: busybox
+    container_name: simple_shell
+    env_file: .env
+    volumes:
+      - ${APP_PATH}:/var/www
+    networks:
+      - db
+
+  nginx:
+    image: nginx
+    container_name: simple_nginx
+    env_file: .env
+    ports:
+      - 80:80
+      - 443:443
+    links:
+      - mysql:db
+    volumes_from:
+      - busybox
+    volumes:
+      - ${APP_PATH}:/var/www
+      - ./dockerfiles/nginx:/etc/nginx
+      - ./logs/nginx/:/var/log/nginx
+    depends_on:
+      - php
+      - phpmyadmin
+      - memcache
+      - mysql
+    networks:
+      - db
+
+  php:
+    image: simple-php56
+    container_name: simple_php
+    env_file: .env
+    links:
+      - mysql:mysql
+    volumes:
+      - ${APP_PATH}:/var/www
+      #- ./dockerfiles/php5.6-fpm/php.ini:/usr/local/etc/php/php.ini
+      - mysqlvolume:/var/lib/mysql
+    volumes_from:
+      - busybox
+      - mysql
+    depends_on:
+      - memcache
+      - mysql
+    expose:
+      - 9000
+    networks:
+      - db
+
+  mysql:
+    image: mysql
+    container_name: simple_mysql
+    env_file: .env
+    ports:
+     - 3306:3306
+    volumes:
+      - ${APP_PATH}:/var/www
+      - ./dockerfiles/mysql:/etc/mysql
+      - ./.data/mysql:/var/lib/mysql
+      - mysqlvolume:/var/lib/mysql
+    volumes_from:
+      - busybox
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+    networks:
+      - db
+
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    container_name: simple_phpmyadmin
+    env_file: .env
+    links:
+      - mysql:db
+    depends_on:
+      - mysql
+    networks:
+      - db
+
+  rabbitmq:
+    image: "rabbitmq:management"
+    container_name: simple_rabbitmq
+    hostname: "rmq"
+    ports:
+      - 15672:15672
+
+  elastic:
+    #image: "elasticsearch:latest"
+    image: willdurand/elk
+    container_name: simple_elasticsearch
+    ports:
+      - 81:80
+    volumes:
+      - ./dockerfiles/elastic/logstash:/etc/logstash
+      - ./dockerfiles/elastic/logstash/patterns:/opt/logstash/patterns
+    volumes_from:
+      - php
+      - nginx
+
+  memcache:
+    image: memcache
+    container_name: simple_memcache
+    env_file: .env
+    volumes_from:
+      - busybox
+    ports:
+     - 11211:11211
+    networks:
+      - db
+
+  redis:
+    image: redis
+    container_name: simple_redis
+    ports:
+      - 6379:6379
+    volumes:
+      - ${APP_PATH}:/var/www
+      - redisvolume:/var/lib/redis
+      - ./dockerfiles/redis:/etc/redis
+    command: "redis-server /etc/redis/6379.conf"
+    networks:
+      - db
+
+
+volumes:
+
+  mysqlvolume:
+    driver: local
+
+  redisvolume:
+    driver: local
+
+
+networks:
+
+  proxy:
+
+  db:

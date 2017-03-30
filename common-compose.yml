@@ -1,0 +1,116 @@
+version: '2'
+services:
+
+  busybox:
+    image: busybox
+    volumes:
+    - ./src:/var/www
+
+  nginx:
+    image: nginx:1.9.6
+    volumes:
+    - ./src:/var/www
+    - ./dockerfiles/nginx/conf.d:/etc/nginx/conf.d
+    - ./logs/nginx/:/var/log/nginx
+    ports:
+    - "80:80"
+
+  nodejs:
+    build: ./dockerfiles/nodejs
+    volumes:
+    - ./src_node:/var/nodejs
+    ports:
+    - "8080:8080"
+
+  php-fpm:
+    build: ./dockerfiles/php5.6
+    volumes:
+    - ./src:/var/www:rw
+#    - ./dockerfiles/php5.6/config/php-fpm.conf:/usr/local/etc/php-fpm.conf:rw
+#    - ./dockerfiles/php5.6/config/php.ini:/usr/local/etc/php/php.ini:rw
+#    - ./dockerfiles/php5.6/config/auth.json:/root/.composer/auth.json:rw
+#    - ./dockerfiles/php5.6/config/xdebug.ini:/usr/local/etc/php/conf.d/xdebug.ini:rw
+#    - ./dockerfiles/php5.6/config/memcache.ini:/usr/local/etc/php/conf.d/memcache.ini:rw
+#    - ./dockerfiles/php5.6/config/amqp.ini:/usr/local/etc/php/conf.d/amqp.ini:rw
+#    - ./dockerfiles/php5.6/config/mongo.ini:/usr/local/etc/php/conf.d/mongo.ini:rw
+#    - ./dockerfiles/php5.6/config/mongodb.ini:/usr/local/etc/php/conf.d/mongodb.ini:rw
+#    - ./dockerfiles/php5.6/config/fpm/php-fpm.conf:/usr/local/etc/php-fpm.conf:rw
+#    - ./dockerfiles/php5.6/config/fpm/pool.d:/usr/local/etc/pool.d:rw
+#    - ./dockerfiles/php5.6/config/redis.ini:/usr/local/etc/php/conf.d/redis.ini:rw
+#    - ./dockerfiles/php5.6/config/memcached.ini:/usr/local/etc/php/conf.d/memcached.ini:rw
+#    - ./dockerfiles/php5.6/config/xdebug.ini:/usr/local/etc/php/conf.d/xdebug.ini:rw
+    working_dir: /var/www/
+    expose:
+    - 9000
+    environment:
+    - ICU_DATA=/opt/icu/
+
+  mongo:
+    image: mongo:3.2.4
+    volumes:
+    #- ./dockerfiles/mongo/db:/data/db:rw
+    - ./dockerfiles/mongo/db:/data/db
+    - ./dockerfiles/mongo/config/mongod.conf:/etc/mongodb.conf
+    command: "mongod --config /etc/mongodb.conf"
+
+  mysql:
+    #build: ./dockerfiles/mysql/build
+    image: mysql
+    volumes:
+    - ./dockerfiles/mysql/db:/var/lib/mysql
+    - ./dockerfiles/mysql/config/my.cnf:/etc/mysql/my.cnf
+    ports:
+    - "3306:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: 'root'
+      MYSQL_DATABASE: 'simple'
+      MYSQL_USER: 'user'
+      MYSQL_PASSWORD: 'user'
+
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+
+  memcached:
+    image: memcached
+    ports:
+      - "localhost:11211:11211"
+    mem_limit: 1g
+    command: memcached -m 1024m
+
+  redis:
+    image: redis
+    ports:
+    - 6379:6379
+    volumes:
+    - ./dockerfiles/redis/config/6379.conf:/etc/redis/6379.conf
+    command: "redis-server /etc/redis/6379.conf"
+
+  rabbitmq:
+    image: "rabbitmq:management"
+    hostname: "rmq"
+    ports:
+    - 15672:15672
+
+  elasticsearch:
+    build: ./dockerfiles/elastic2
+    command: "elasticsearch -Des.cluster.name='simple'"
+    volumes:
+    - ./dockerfiles/elastic/config/elasticsearch.yml:/elasticsearch/config/elasticsearch.yml
+    - ./dockerfiles/elastic/data:/usr/share/elasticsearch/data
+    ports:
+    - 9200:9200
+    - 9300:9300
+
+  graylog:
+    image: graylog2/server:2.1.1-1
+    volumes:
+      - ./dockerfiles/graylog/data/journal:/usr/share/graylog/data/journal
+      - ./dockerfiles/graylog/config:/usr/share/graylog/data/config
+    environment:
+      GRAYLOG_PASSWORD_SECRET: password12345678
+      GRAYLOG_ROOT_PASSWORD_SHA2: aafeeba6959ebeeb96519d5dcf0bcc069f81e4bb56c246d04872db92666e6d4b
+      GRAYLOG_WEB_ENDPOINT_URI: http://127.0.0.1:9400/api
+    ports:
+      - "9400:9400"
+      - "12201/udp:12201/udp"
+      - "1514/udp:1514/udp"
